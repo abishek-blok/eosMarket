@@ -1,6 +1,8 @@
 #include <eosio/eosio.hpp>
 #include <eosio/asset.hpp>
 #include <eosio/system.hpp>
+#include <eosio/singleton.hpp>
+
 using namespace std;
 using namespace eosio;
 
@@ -10,13 +12,18 @@ CONTRACT market : public contract {
 
     ACTION hi(name from, string message);
     ACTION clear();
-
+    ACTION testa(name from);
     ACTION listcard(name from, uint64_t asset_id,asset price);
-    ACTION addbalance(name from,asset amount);
+    //ACTION addbalance(name from,asset amount);
     ACTION buy(name from,uint64_t asset_id);
     ACTION addtoken(symbol sys);
     ACTION notify(name user, string msg);
     ACTION addoffer(name from, uint64_t asset_id,asset price);
+    //[[eosio::on_notify("eosio.token::transfer")]] ACTION deposit(name from,name to, uint64_t asset_id,asset price);
+    [[eosio::on_notify("eosio.token::transfer")]] void deposit(name from, name to, eosio::asset quantity, std::string memo);
+
+    ACTION multitest(asset price);
+ 
   private:
     TABLE messages {
       name    user;
@@ -32,7 +39,11 @@ CONTRACT market : public contract {
         auto primary_key() const { return sys_val.code().raw(); };
     };
 
-    typedef multi_index<name("token"), token_struct> token_table;
+    //typedef multi_index<name("token"), token_struct> token_table;
+    //typedef multi_index<name("token"), token_struct> token_table;
+    //typedef singleton<name("token"), token_struct> token_table;
+    typedef singleton<"token"_n, token_struct> token_table;
+    typedef eosio::multi_index<"token"_n, token_struct> token_table_for_abi;
     //token_table _token;
 
 
@@ -72,6 +83,6 @@ CONTRACT market : public contract {
    // offer_table _offer;
 
 void send_summary(name user, string message);
-
+void addbalance(name from, asset amount);
 void transfer();
 };

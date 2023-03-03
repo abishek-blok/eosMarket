@@ -52,35 +52,34 @@ require_auth(from);
                                  {
                                      list.price = price;
                                  });
-}
-}
+    }
+  }
 
-ACTION market::addbalance(name from, asset amount){
-require_auth(from);
-
+void market::addbalance(name from, asset amount){
    token_table _token(get_self(), get_self().value);
-    check(_token.begin()!=_token.end(), "token not added yet");
-    auto token = _token.begin();
-    check(amount.symbol.code().raw() == token->sys_val.code().raw(),"this token is not accepted");
+    check(_token.exists(), "token not added yet");
+   // auto token = _token.begin();
+   // check(amount.symbol.code().raw() == token->sys_val.code().raw(),"this token is not accepted");
+    check(amount.symbol.code().raw() == _token.get().sys_val.code().raw(),"this token is not accepted");
 
  balance_table _balance(get_self(), get_self().value);
  auto balance_itr = _balance.find(from.value);
   if (balance_itr == _balance.end()) {
-  _balance.emplace(from,[&](auto &balance)
+  _balance.emplace(get_self(),[&](auto &balance)
                                  {
                                      balance.account = from;
                                      balance.available_balance = amount;
                                      balance.locked_balance.amount = 0;
                                  });
   }else{
-    _balance.modify(balance_itr,from, [&](auto &balance)
+    _balance.modify(balance_itr,get_self(), [&](auto &balance)
                                  {
                                      balance.available_balance += amount;
                                  });
-}
-}
+    }
+  }
 
-  ACTION market::buy(name from, uint64_t asset_id){
+ACTION market::buy(name from, uint64_t asset_id){
     require_auth(from);
     list_table _list(get_self(), get_self().value);
     auto list_itr = _list.find(asset_id);
@@ -127,18 +126,29 @@ require_auth(from);
    }
 
 
-ACTION market::addtoken(symbol sys){
-require_auth(get_self());
- token_table _token(get_self(), get_self().value);
- check(_token.begin()==_token.end(), "token already exist");
- 
-  _token.emplace(get_self(),[&](auto &token)
-                                 {
-                                     token.sys_val = sys;
-                                 });
-  }
+  
+  
 
- ACTION market::notify(name user, string msg) {
+ACTION market::addtoken(symbol sys){
+    require_auth(get_self());
+    token_table _token(get_self(), get_self().value);
+    //check(_token.begin()==_token.end(), "token already exist");
+
+    check(!_token.exists(), "token already exists");
+    
+     // _token.emplace(get_self(),[&](auto &token)
+      //                              {
+        //                                token.sys_val = sys;
+          //                          });
+ // auto entry_stored = _token.get_or_create(get_self(),token_table);
+   //entry_stored.sys_val = sys;
+   //_token.set(entry_stored, get_self());
+
+      _token.set(token_struct{sys_val:sys}, get_self());
+    }
+
+
+  ACTION market::notify(name user, string msg) {
     require_auth(get_self());
     require_recipient(user);
   }
@@ -166,9 +176,9 @@ require_auth(get_self());
 
 
     ACTION market::addoffer(name from, uint64_t asset_id,asset price){
-    require_auth(from);
-    list_table _list(get_self(), get_self().value);
-    auto list_itr = _list.find(asset_id);
+      require_auth(from);
+      list_table _list(get_self(), get_self().value);
+      auto list_itr = _list.find(asset_id);
       if (list_itr == _list.end()) {
           print("asset not listed ");
         }else{
@@ -179,28 +189,61 @@ require_auth(get_self());
             print("balance  not added ");
           }else{
           check(balance_itr->locked_balance.amount < list_itr->price.amount, "offer price connot be more or equal to actual price");
+          offer_table _offer(get_self(), get_self().value);
+          auto offer_itr = _offer.find(asset_id);
+          if (offer_itr == _offer.end()) {
+            _balance.modify(balance_itr,from, [&](auto &balance)
+                                    {
+                                        balance.available_balance -= price;
+                                        balance.locked_balance.amount = price.amount;
+                                    });
 
+            _offer.emplace(from,[&](auto &offer)
+                                    {
+                                        offer.asset_id = asset_id;
+                                        offer.price = price;
+                                        offer.offeredBy = from ;
+                                    });                         
+          }else{
+          print("offer already added ");
+          }
+          }}
+    }
+    
+    void market::deposit(name from, name to, eosio::asset quantity, std::string memo)
+        {
+        check(quantity.amount > 0, "Amount cannot be less than 0 or 0");
+        token_table _token(get_self(), get_self().value);
 
-  offer_table _offer(get_self(), get_self().value);
-      auto offer_itr = _offer.find(asset_id);
-      if (offer_itr == _offer.end()) {
-        _balance.modify(balance_itr,from, [&](auto &balance)
-                                 {
-                                     balance.available_balance -= price;
-                                     balance.locked_balance.amount = price.amount;
-                                 });
+        check(_token.exists(), "token not added yet");
+          // auto token = _token.begin();
+          // check(amount.symbol.code().raw() == token->sys_val.code().raw(),"this token is not accepted");
+            auto token = _token.get();
+            check(quantity.symbol.code().raw() == token.sys_val.code().raw(),"this token is not accepted");
 
-        _offer.emplace(from,[&](auto &offer)
-                                 {
-                                     offer.asset_id = asset_id;
-                                     offer.price = price;
-                                     offer.offeredBy = from ;
-                                 });                         
-      }else{
-       print("offer already added ");
+            
+          // check(_token.begin()!=_token.end(), "token not added yet");
+            //auto token = _token.find(quantity.symbol.code().raw());
+          // check(token != _token.end() ,"this token is not accepted");
+          // check(quantity.symbol.code().raw() == token->sys_val.code().raw(),"this token is not accepted");
+          addbalance(from, quantity);
       }
-      }}
-   }
+
+
+      ACTION market::testa(name from) {
+          token_table _token(get_self(), get_self().value);
+          check(_token.exists(), "token not added yet");
+          require_auth(get_self());
+          // delete from kv table
+               _token.remove();
+    }
+
+      ACTION market::multitest(asset price) {
+          list_table _list(get_self(), get_self().value);
+          auto list = _list.get_index<name("price")>();
+          auto itr = list.lower_bound(price.amount);
+         print("offer already added ",itr->owner);
+    }
 
 
 

@@ -4,20 +4,6 @@
     "types": [],
     "structs": [
         {
-            "name": "addbalance",
-            "base": "",
-            "fields": [
-                {
-                    "name": "from",
-                    "type": "name"
-                },
-                {
-                    "name": "amount",
-                    "type": "asset"
-                }
-            ]
-        },
-        {
             "name": "addoffer",
             "base": "",
             "fields": [
@@ -155,6 +141,16 @@
             ]
         },
         {
+            "name": "multitest",
+            "base": "",
+            "fields": [
+                {
+                    "name": "price",
+                    "type": "asset"
+                }
+            ]
+        },
+        {
             "name": "notify",
             "base": "",
             "fields": [
@@ -187,6 +183,16 @@
             ]
         },
         {
+            "name": "testa",
+            "base": "",
+            "fields": [
+                {
+                    "name": "from",
+                    "type": "name"
+                }
+            ]
+        },
+        {
             "name": "token_struct",
             "base": "",
             "fields": [
@@ -198,11 +204,6 @@
         }
     ],
     "actions": [
-        {
-            "name": "addbalance",
-            "type": "addbalance",
-            "ricardian_contract": ""
-        },
         {
             "name": "addoffer",
             "type": "addoffer",
@@ -234,8 +235,18 @@
             "ricardian_contract": ""
         },
         {
+            "name": "multitest",
+            "type": "multitest",
+            "ricardian_contract": ""
+        },
+        {
             "name": "notify",
             "type": "notify",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "testa",
+            "type": "testa",
             "ricardian_contract": ""
         }
     ],
